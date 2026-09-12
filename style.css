@@ -372,11 +372,37 @@ body {
 
   overflow: hidden;
 
-  touch-action: pan-y;
+  /*
+   * Esta zona es una superficie táctil propia.
+   * El navegador no debe interpretar el gesto:
+   * nosotros gestionamos el swipe mediante Pointer Events.
+   */
+  touch-action: none;
 
   position: relative;
 
   flex-shrink: 0;
+
+  /*
+   * Evita selección/gestos nativos durante el arrastre.
+   */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+
+.interaction-area button {
+
+  /*
+   * Los botones siguen siendo botones normales.
+   * Permitimos su interacción táctil sin que el sistema
+   * de swipe interfiera con ellos.
+   */
+  touch-action: manipulation;
+
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .interaction-area button {
