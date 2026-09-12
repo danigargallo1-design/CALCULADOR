@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"
+  >
+
+  <meta
+    name="description"
+    content="Calculadora minimalista y premium."
+  >
+
+  <title>Calculadora</title>
+
+  <!-- ========== PWA ========== -->
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <meta name="theme-color" content="#f7f6f2">
+  <meta name="color-scheme" content="light">
+
+  <!-- Apple / iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Calculadora">
+  <meta name="application-name" content="Calculadora">
+  <meta name="format-detection" content="telephone=no">
+
+  <!-- Iconos -->
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="assets/icons/icon-512.png">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <main class="calculator">
+
+    <!-- =====================================================
+         TOP BAR
+         ===================================================== -->
+
+    <header class="topbar" aria-label="Barra superior">
+
+      <button
+        class="topbar__button"
+        type="button"
+        data-action="open-history"
+        aria-label="Abrir historial"
+      >
+        <svg
+          class="topbar__icon"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"
+          ></path>
+          <polyline
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            points="3.5 4 3.5 8.5 8 8.5"
+          ></polyline>
+          <polyline
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            points="12 7.5 12 12 15.2 13.8"
+          ></polyline>
+        </svg>
+      </button>
+
+    </header>
+
+
+    <!-- =====================================================
+         DISPLAY
+         ===================================================== -->
+
+    <section
+      class="display"
+      aria-label="Pantalla de la calculadora"
+    >
+
+      <div
+        class="display__expression"
+        id="expression"
+        aria-hidden="true"
+      ></div>
+
+      <div
+        class="display__value"
+        id="display"
+        aria-live="polite"
+      >
+        0
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         INTERACTION AREA
+         ===================================================== -->
+
+    <section
+      class="interaction-area"
+      aria-label="Controles de la calculadora"
+    >
+
+      <div
+        class="interaction-track"
+        id="interactionTrack"
+      >
+
+        <!-- =================================================
+             SMART SHORTCUT PANEL (IZQUIERDA)
+             ================================================= -->
+
+        <div
+          class="interaction-panel interaction-panel--shortcuts"
+          data-panel="shortcuts"
+        >
+
+          <div class="shortcut-panel">
+
+            <div class="shortcut-panel__header">
+
+              <div>
+
+                <span class="shortcut-panel__eyebrow">
+                  INTELIGENTE
+                </span>
+
+                <h2 class="shortcut-panel__title">
+                  Atajos
+                </h2>
+
+              </div>
+
+              <span
+                class="shortcut-panel__hint"
+                aria-hidden="true"
+              >
+                desliza →
+              </span>
+
+            </div>
+
+
+            <div
+              class="shortcut-grid"
+              aria-label="Atajos inteligentes"
+            >
+
+              <button
+                class="shortcut shortcut--primary"
+                type="button"
+                data-shortcut="iva"
+                aria-label="Aplicar IVA (21%)"
+              >
+                IVA
+              </button>
+
+              <button
+                class="shortcut shortcut--primary"
+                type="button"
+                data-shortcut="minus-iva"
+                aria-label="Quitar IVA (21%)"
+              >
+                − IVA
+              </button>
+
+              <button
+                class="shortcut"
+                type="button"
+                data-shortcut="percent-10"
+                aria-label="Diez por ciento del valor"
+              >
+                10%
+              </button>
+
+              <button
+                class="shortcut"
+                type="button"
+                data-shortcut="percent-20"
+                aria-label="Veinte por ciento del valor"
+              >
+                20%
+              </button>
+
+              <button
+                class="shortcut"
+                type="button"
+                data-shortcut="plus-10"
+                aria-label="Sumar diez por ciento"
+              >
+                +10%
+              </button>
+
+              <button
+                class="shortcut"
+                type="button"
+                data-shortcut="minus-10"
+                aria-label="Restar diez por ciento"
+              >
+                −10%
+              </button>
+
+              <button
+                class="shortcut"
+                type="button"
+                data-shortcut="plus-20"
+                aria-label="Sumar veinte por ciento"
+              >
+                +20%
+              </button>
+
+              <button
+                class="shortcut"
+                type="button"
+                data-shortcut="minus-20"
+                aria-label="Restar veinte por ciento"
+              >
+                −20%
+              </button>
+
+              <button
+                class="shortcut"
+                type="button"
+                data-shortcut="plus-21"
+                aria-label="Sumar veintiuno por ciento"
+              >
+                +21%
+              </button>
+
+              <button
+                class="shortcut"
+                type="button"
+                data-shortcut="minus-21"
+                aria-label="Restar veintiuno por ciento"
+              >
+                −21%
+              </button>
+
+              <button
+                class="shortcut shortcut--soft"
+                type="button"
+                data-shortcut="tip"
+                aria-label="Añadir propina del diez por ciento"
+              >
+                PROPINA
+              </button>
+
+              <button
+                class="shortcut shortcut--soft"
+                type="button"
+                data-shortcut="split"
+                aria-label="Repartir entre dos"
+              >
+                REPARTIR
+              </button>
+
+            </div>
+
+
+            <div
+              class="shortcut-panel__footer"
+              aria-hidden="true"
+            >
+
+              <span class="swipe-indicator">
+                <span class="swipe-indicator__dot"></span>
+                <span class="swipe-indicator__dot"></span>
+              </span>
+
+              <span>
+                desliza para volver
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- =================================================
+             NUMERIC KEYPAD (CENTRO)
+             ================================================= -->
+
+        <div
+          class="interaction-panel interaction-panel--calculator"
+          data-panel="calculator"
+        >
+
+          <div
+            class="keypad"
+            aria-label="Teclado numérico"
+          >
+
+            <!-- FILA 1 -->
+
+            <button
+              class="key key--delete"
+              type="button"
+              data-action="clear"
+              aria-label="Borrar todo"
+            >
+
+              <svg
+                class="trash-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                x="0px"
+                y="0px"
+                width="100"
+                height="100"
+                viewBox="0 0 48 48"
+                aria-hidden="true"
+              >
+
+                <path
+                  fill="none"
+                  stroke="#000"
+                  stroke-miterlimit="10"
+                  stroke-width="3"
+                  d="M19.5,11.5V10c0-2.5,2-4.5,4.5-4.5s4.5,2,4.5,4.5v1.5"
+                ></path>
+
+                <line
+                  x1="8.5"
+                  x2="39.5"
+                  y1="11.5"
+                  y2="11.5"
+                  fill="none"
+                  stroke="#000"
+                  stroke-linecap="round"
+                  stroke-miterlimit="10"
+                  stroke-width="3"
+                ></line>
+
+                <line
+                  x1="36.5"
+                  x2="36.5"
+                  y1="23.5"
+                  y2="11.5"
+                  fill="none"
+                  stroke="#000"
+                  stroke-linecap="round"
+                  stroke-miterlimit="10"
+                  stroke-width="3"
+                ></line>
+
+                <path
+                  fill="none"
+                  stroke="#000"
+                  stroke-linecap="round"
+                  stroke-miterlimit="10"
+                  stroke-width="3"
+                  d="M11.5,18.7v19.8c0,2.2,1.8,4,4,4h17c2.2,0,4-1.8,4-4V31"
+                ></path>
+
+                <line
+                  x1="20.5"
+                  x2="20.5"
+                  y1="19.5"
+                  y2="34.5"
+                  fill="none"
+                  stroke="#000"
+                  stroke-linecap="round"
+                  stroke-miterlimit="10"
+                  stroke-width="3"
+                ></line>
+
+                <line
+                  x1="27.5"
+                  x2="27.5"
+                  y1="19.5"
+                  y2="34.5"
+                  fill="none"
+                  stroke="#000"
+                  stroke-linecap="round"
+                  stroke-miterlimit="10"
+                  stroke-width="3"
+                ></line>
+
+              </svg>
+
+            </button>
+
+
+            <button
+              class="key key--function"
+              type="button"
+              data-action="sign"
+              aria-label="Cambiar signo"
+            >
+              ±
+            </button>
+
+
+            <button
+              class="key key--function"
+              type="button"
+              data-action="percent"
+              aria-label="Porcentaje"
+            >
+              %
+            </button>
+
+
+            <button
+              class="key key--operator"
+              type="button"
+              data-operator="/"
+              aria-label="Dividir"
+            >
+              ÷
+            </button>
+
+
+            <!-- FILA 2 -->
+
+            <button class="key key--number" type="button" data-number="7">7</button>
+            <button class="key key--number" type="button" data-number="8">8</button>
+            <button class="key key--number" type="button" data-number="9">9</button>
+
+            <button
+              class="key key--operator"
+              type="button"
+              data-operator="*"
+              aria-label="Multiplicar"
+            >
+              ×
+            </button>
+
+
+            <!-- FILA 3 -->
+
+            <button class="key key--number" type="button" data-number="4">4</button>
+            <button class="key key--number" type="button" data-number="5">5</button>
+            <button class="key key--number" type="button" data-number="6">6</button>
+
+            <button
+              class="key key--operator"
+              type="button"
+              data-operator="-"
+              aria-label="Restar"
+            >
+              −
+            </button>
+
+
+            <!-- FILA 4 -->
+
+            <button class="key key--number" type="button" data-number="1">1</button>
+            <button class="key key--number" type="button" data-number="2">2</button>
+            <button class="key key--number" type="button" data-number="3">3</button>
+
+            <button
+              class="key key--operator"
+              type="button"
+              data-operator="+"
+              aria-label="Sumar"
+            >
+              +
+            </button>
+
+
+            <!-- FILA 5 -->
+
+            <button class="key key--number" type="button" data-number="0">0</button>
+
+            <button
+              class="key key--number"
+              type="button"
+              data-action="decimal"
+              aria-label="Decimal"
+            >
+              ,
+            </button>
+
+            <button
+              class="key key--function key--backspace"
+              type="button"
+              data-action="backspace"
+              aria-label="Borrar último carácter"
+            >
+
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+
+                <path
+                  d="M22 3H7.83a2 2 0 0 0-1.66.89L1.42 12l4.75 8.11A2 2 0 0 0 7.83 21H22a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm-2.59 12.59L18 17l-4-4-4 4-1.41-1.41L12.59 12l-4-4L10 6.59l4 4 4-4L19.41 8l-4 4 4 4Z"
+                />
+
+              </svg>
+
+            </button>
+
+            <button
+              class="key key--equals"
+              type="button"
+              data-action="equals"
+              aria-label="Igual"
+            >
+              =
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- =================================================
+             SCIENTIFIC PANEL (DERECHA)
+             ================================================= -->
+
+        <div
+          class="interaction-panel interaction-panel--scientific"
+          data-panel="scientific"
+        >
+
+          <div class="scientific-panel">
+
+            <div class="scientific-panel__header">
+
+              <div>
+
+                <span class="shortcut-panel__eyebrow">
+                  AVANZADA
+                </span>
+
+                <h2 class="shortcut-panel__title">
+                  Científica
+                </h2>
+
+              </div>
+
+              <span
+                class="shortcut-panel__hint"
+                aria-hidden="true"
+              >
+                ← desliza
+              </span>
+
+            </div>
+
+
+            <div
+              class="scientific-grid"
+              aria-label="Teclado científico"
+            >
+
+              <!-- Fila 1 -->
+              <button class="key key--sci" type="button" data-sci="sin" aria-label="Seno">sin</button>
+              <button class="key key--sci" type="button" data-sci="cos" aria-label="Coseno">cos</button>
+              <button class="key key--sci" type="button" data-sci="tan" aria-label="Tangente">tan</button>
+              <button class="key key--sci" type="button" data-sci="paren-open" aria-label="Abrir paréntesis">(</button>
+              <button class="key key--sci" type="button" data-sci="paren-close" aria-label="Cerrar paréntesis">)</button>
+
+              <!-- Fila 2 -->
+              <button class="key key--sci" type="button" data-sci="asin" aria-label="Arco seno"><span class="sci-label">sin<sup>−1</sup></span></button>
+              <button class="key key--sci" type="button" data-sci="acos" aria-label="Arco coseno"><span class="sci-label">cos<sup>−1</sup></span></button>
+              <button class="key key--sci" type="button" data-sci="atan" aria-label="Arco tangente"><span class="sci-label">tan<sup>−1</sup></span></button>
+              <button class="key key--sci" type="button" data-sci="pi" aria-label="Pi">π</button>
+              <button class="key key--sci" type="button" data-sci="e" aria-label="Número e">e</button>
+
+              <!-- Fila 3 -->
+              <button class="key key--sci" type="button" data-sci="log" aria-label="Logaritmo base 10">log</button>
+              <button class="key key--sci" type="button" data-sci="ln" aria-label="Logaritmo natural">ln</button>
+              <button class="key key--sci" type="button" data-sci="sqrt" aria-label="Raíz cuadrada">√</button>
+              <button class="key key--sci" type="button" data-sci="square" aria-label="Cuadrado"><span class="sci-label">x<sup>2</sup></span></button>
+              <button class="key key--sci key--sci-op" type="button" data-sci="power" aria-label="Elevado a"><span class="sci-label">x<sup>y</sup></span></button>
+
+            </div>
+
+
+            <div
+              class="scientific-panel__footer"
+              aria-hidden="true"
+            >
+
+              <span class="swipe-indicator swipe-indicator--reverse">
+                <span class="swipe-indicator__dot"></span>
+                <span class="swipe-indicator__dot"></span>
+              </span>
+
+              <span>
+                desliza para volver
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         PANEL INDICATOR
+         ===================================================== -->
+
+    <div
+      class="panel-indicator"
+      aria-hidden="true"
+    >
+
+      <span
+        class="panel-indicator__dot"
+        data-indicator="shortcuts"
+      ></span>
+
+      <span
+        class="panel-indicator__dot is-active"
+        data-indicator="calculator"
+      ></span>
+
+      <span
+        class="panel-indicator__dot"
+        data-indicator="scientific"
+      ></span>
+
+    </div>
+
+  </main>
+
+
+  <!-- =====================================================
+       HISTORY SCREEN
+       ===================================================== -->
+
+  <section
+    class="history-screen"
+    id="historyScreen"
+    aria-hidden="true"
+    aria-label="Historial de operaciones"
+  >
+
+    <div class="history-screen__inner">
+
+      <header class="history-screen__header">
+
+        <button
+          class="history-screen__back"
+          type="button"
+          data-action="close-history"
+          aria-label="Volver"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.9"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M15 5.5 8 12l7 6.5"
+            ></path>
+          </svg>
+        </button>
+
+        <div class="history-screen__titles">
+          <span class="shortcut-panel__eyebrow">REGISTRO</span>
+          <h2 class="shortcut-panel__title">Historial</h2>
+        </div>
+
+        <button
+          class="history-screen__clear"
+          type="button"
+          data-action="clear-history"
+          aria-label="Vaciar historial"
+        >
+          Vaciar
+        </button>
+
+      </header>
+
+      <div class="history-screen__list" id="historyList">
+        <p class="history-empty" id="historyEmpty">Aún no hay operaciones</p>
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <script src="script.js"></script>
+
+</body>
+
+</html>
