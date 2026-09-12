@@ -1090,115 +1090,214 @@ function setActivePanel(panel, immediate = false) {
 
 
 /* =========================================================
-   SWIPE HANDLING (with elastic resistance at edges)
+   SWIPE HANDLING
    ========================================================= */
 
 interactionArea.addEventListener("pointerdown", event => {
 
-  if (event.pointerType === "mouse" && event.button !== 0) return;
+  if (
+    event.pointerType === "mouse" &&
+    event.button !== 0
+  ) {
+    return;
+  }
 
-  pointerIsDown   = true;
+  /*
+   * MUY IMPORTANTE:
+   * si el gesto empieza sobre un botón, no iniciamos
+   * el sistema de swipe.
+   *
+   * Esto evita que un pequeño movimiento del dedo
+   * convierta un toque normal en un arrastre.
+   */
+
+  if (event.target.closest("button")) {
+    pointerIsDown = false;
+    pointerDragging = false;
+    return;
+  }
+
+  pointerIsDown = true;
   pointerDragging = false;
 
-  pointerStartX   = event.clientX;
-  pointerStartY   = event.clientY;
+  pointerStartX = event.clientX;
+  pointerStartY = event.clientY;
   pointerCurrentX = event.clientX;
 });
 
 
 interactionArea.addEventListener("pointermove", event => {
 
-  if (!pointerIsDown) return;
+  if (!pointerIsDown) {
+    return;
+  }
 
   pointerCurrentX = event.clientX;
 
-  const deltaX = pointerCurrentX - pointerStartX;
-  const deltaY = event.clientY - pointerStartY;
+  const deltaX =
+    pointerCurrentX - pointerStartX;
 
-  if (Math.abs(deltaX) < 8 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
+  const deltaY =
+    event.clientY - pointerStartY;
 
-  pointerDragging = true;
-  interactionTrack.classList.add("is-dragging");
 
-  const areaWidth   = interactionArea.clientWidth;
-  const idx         = panelIndex(activePanel);
-  const basePx      = -(idx * areaWidth);
+  /*
+   * Esperamos a que exista un desplazamiento
+   * claramente horizontal.
+   */
 
-  let newOffset = basePx + deltaX;
+  const horizontalDistance =
+    Math.abs(deltaX);
 
-  const minOffset = -((PANELS.length - 1) * areaWidth);
-  const maxOffset = 0;
+  const verticalDistance =
+    Math.abs(deltaY);
 
-  /* Elastic resistance beyond boundaries */
-  if (newOffset > maxOffset) {
-    const over = newOffset - maxOffset;
-    newOffset = maxOffset + over * 0.28;
-  } else if (newOffset < minOffset) {
-    const over = minOffset - newOffset;
-    newOffset = minOffset - over * 0.28;
+
+  if (
+    horizontalDistance < 14 ||
+    horizontalDistance <= verticalDistance
+  ) {
+    return;
   }
 
-  interactionTrack.style.transform = `translateX(${newOffset}px)`;
+
+  pointerDragging = true;
+
+  interactionTrack.classList.add(
+    "is-dragging"
+  );
+
+
+  const areaWidth =
+    interactionArea.clientWidth;
+
+
+  const idx =
+    panelIndex(activePanel);
+
+
+  const basePx =
+    -(idx * areaWidth);
+
+
+  let newOffset =
+    basePx + deltaX;
+
+
+  const minOffset =
+    -((PANELS.length - 1) * areaWidth);
+
+
+  const maxOffset = 0;
+
+
+  /*
+   * Resistencia elástica en los extremos.
+   */
+
+  if (newOffset > maxOffset) {
+
+    const over =
+      newOffset - maxOffset;
+
+    newOffset =
+      maxOffset + over * 0.28;
+
+  } else if (newOffset < minOffset) {
+
+    const over =
+      minOffset - newOffset;
+
+    newOffset =
+      minOffset - over * 0.28;
+  }
+
+
+  interactionTrack.style.transform =
+    `translateX(${newOffset}px)`;
 });
 
 
 function endPointerGesture() {
 
-  if (!pointerIsDown) return;
-
-  const deltaX = pointerCurrentX - pointerStartX;
-
-  pointerIsDown = false;
-
-  interactionTrack.classList.remove("is-dragging");
-
-  if (!pointerDragging) {
-    /*
-     * No arrastre real: reasegurar posición del panel actual
-     */
-    setActivePanel(activePanel);
+  if (!pointerIsDown) {
     return;
   }
 
+
+  const deltaX =
+    pointerCurrentX - pointerStartX;
+
+
+  pointerIsDown = false;
+
+
+  interactionTrack.classList.remove(
+    "is-dragging"
+  );
+
+
   /*
-   * Un arrastre real: cancelar el próximo click sintético
-   * que dispararía el botón sobre el que quedó el dedo.
+   * Si no hubo arrastre real,
+   * simplemente dejamos el panel donde estaba.
    */
-  suppressNextClick = true;
-  setTimeout(() => { suppressNextClick = false; }, 350);
+
+  if (!pointerDragging) {
+
+    setActivePanel(
+      activePanel
+    );
+
+    return;
+  }
+
 
   const threshold = 45;
-  const idx       = panelIndex(activePanel);
+
+  const idx =
+    panelIndex(activePanel);
+
 
   let targetIdx = idx;
 
-  if (deltaX < -threshold && idx < PANELS.length - 1) {
-    targetIdx = idx + 1;
-  } else if (deltaX > threshold && idx > 0) {
-    targetIdx = idx - 1;
+
+  if (
+    deltaX < -threshold &&
+    idx < PANELS.length - 1
+  ) {
+
+    targetIdx =
+      idx + 1;
+
+  } else if (
+    deltaX > threshold &&
+    idx > 0
+  ) {
+
+    targetIdx =
+      idx - 1;
   }
 
-  setActivePanel(PANELS[targetIdx]);
+
+  setActivePanel(
+    PANELS[targetIdx]
+  );
+
 
   pointerDragging = false;
 }
 
 
-interactionArea.addEventListener("pointerup",     endPointerGesture);
-interactionArea.addEventListener("pointercancel", endPointerGesture);
+interactionArea.addEventListener(
+  "pointerup",
+  endPointerGesture
+);
 
 
-/*
- * Interceptor: si acaba de haber un swipe real, no dejamos
- * que el click sintético del navegador pulse el botón.
- */
-interactionArea.addEventListener("click", event => {
-  if (suppressNextClick) {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    suppressNextClick = false;
-  }
-}, true);
+interactionArea.addEventListener(
+  "pointercancel",
+  endPointerGesture
+);
 
 
 /* =========================================================
