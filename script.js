@@ -58,7 +58,7 @@ let pointerStartY   = 0;
 let pointerCurrentX = 0;
 let pointerIsDown   = false;
 let pointerDragging = false;
-let suppressNextClick = false;
+
 
 
 /* =========================================================
@@ -1090,25 +1090,18 @@ function setActivePanel(panel, immediate = false) {
 
 
 /* =========================================================
-   SWIPE HANDLING
+   SWIPE HANDLING — STABLE TOUCH VERSION
    ========================================================= */
+
+let swipeLocked = false;
+
 
 interactionArea.addEventListener("pointerdown", event => {
 
-  if (
-    event.pointerType === "mouse" &&
-    event.button !== 0
-  ) {
-    return;
-  }
-
   /*
-   * MUY IMPORTANTE:
-   * si el gesto empieza sobre un botón, no iniciamos
-   * el sistema de swipe.
-   *
-   * Esto evita que un pequeño movimiento del dedo
-   * convierta un toque normal en un arrastre.
+   * Los botones son botones.
+   * Nunca dejamos que un toque sobre un botón
+   * entre en el sistema de swipe.
    */
 
   if (event.target.closest("button")) {
@@ -1117,11 +1110,32 @@ interactionArea.addEventListener("pointerdown", event => {
     return;
   }
 
+
+  if (
+    event.pointerType === "mouse" &&
+    event.button !== 0
+  ) {
+    return;
+  }
+
+
+  /*
+   * Pequeño bloqueo después de completar un swipe.
+   * Evita que el siguiente toque sea interpretado
+   * como continuación del gesto anterior.
+   */
+
+  if (swipeLocked) {
+    return;
+  }
+
+
   pointerIsDown = true;
   pointerDragging = false;
 
   pointerStartX = event.clientX;
   pointerStartY = event.clientY;
+
   pointerCurrentX = event.clientX;
 });
 
@@ -1132,7 +1146,9 @@ interactionArea.addEventListener("pointermove", event => {
     return;
   }
 
+
   pointerCurrentX = event.clientX;
+
 
   const deltaX =
     pointerCurrentX - pointerStartX;
@@ -1141,17 +1157,17 @@ interactionArea.addEventListener("pointermove", event => {
     event.clientY - pointerStartY;
 
 
-  /*
-   * Esperamos a que exista un desplazamiento
-   * claramente horizontal.
-   */
-
   const horizontalDistance =
     Math.abs(deltaX);
 
   const verticalDistance =
     Math.abs(deltaY);
 
+
+  /*
+   * Sólo consideramos swipe cuando el movimiento
+   * es claramente horizontal.
+   */
 
   if (
     horizontalDistance < 14 ||
@@ -1163,6 +1179,7 @@ interactionArea.addEventListener("pointermove", event => {
 
   pointerDragging = true;
 
+
   interactionTrack.classList.add(
     "is-dragging"
   );
@@ -1172,64 +1189,75 @@ interactionArea.addEventListener("pointermove", event => {
     interactionArea.clientWidth;
 
 
-  const idx =
+  const currentIndex =
     panelIndex(activePanel);
 
 
-  const basePx =
-    -(idx * areaWidth);
+  const baseOffset =
+    -(currentIndex * areaWidth);
 
 
-  let newOffset =
-    basePx + deltaX;
+  let offset =
+    baseOffset + deltaX;
 
 
-  const minOffset =
+  const minimumOffset =
     -((PANELS.length - 1) * areaWidth);
 
 
-  const maxOffset = 0;
+  const maximumOffset =
+    0;
 
 
   /*
-   * Resistencia elástica en los extremos.
+   * Resistencia en los extremos.
    */
 
-  if (newOffset > maxOffset) {
+  if (offset > maximumOffset) {
 
     const over =
-      newOffset - maxOffset;
+      offset - maximumOffset;
 
-    newOffset =
-      maxOffset + over * 0.28;
+    offset =
+      maximumOffset + over * 0.25;
 
-  } else if (newOffset < minOffset) {
+  } else if (offset < minimumOffset) {
 
     const over =
-      minOffset - newOffset;
+      minimumOffset - offset;
 
-    newOffset =
-      minOffset - over * 0.28;
+    offset =
+      minimumOffset - over * 0.25;
   }
 
 
   interactionTrack.style.transform =
-    `translateX(${newOffset}px)`;
+    `translateX(${offset}px)`;
 });
 
 
-function endPointerGesture() {
+function endPointerGesture(event) {
 
   if (!pointerIsDown) {
     return;
   }
 
 
+  /*
+   * Guardamos el desplazamiento ANTES de
+   * resetear el estado.
+   */
+
   const deltaX =
     pointerCurrentX - pointerStartX;
 
 
+  const wasDragging =
+    pointerDragging;
+
+
   pointerIsDown = false;
+  pointerDragging = false;
 
 
   interactionTrack.classList.remove(
@@ -1238,11 +1266,11 @@ function endPointerGesture() {
 
 
   /*
-   * Si no hubo arrastre real,
-   * simplemente dejamos el panel donde estaba.
+   * Toque normal fuera de botones:
+   * simplemente mantenemos el panel actual.
    */
 
-  if (!pointerDragging) {
+  if (!wasDragging) {
 
     setActivePanel(
       activePanel
@@ -1254,37 +1282,68 @@ function endPointerGesture() {
 
   const threshold = 45;
 
-  const idx =
+
+  const currentIndex =
     panelIndex(activePanel);
 
 
-  let targetIdx = idx;
+  let targetIndex =
+    currentIndex;
 
 
   if (
     deltaX < -threshold &&
-    idx < PANELS.length - 1
+    currentIndex < PANELS.length - 1
   ) {
 
-    targetIdx =
-      idx + 1;
+    targetIndex =
+      currentIndex + 1;
 
   } else if (
     deltaX > threshold &&
-    idx > 0
+    currentIndex > 0
   ) {
 
-    targetIdx =
-      idx - 1;
+    targetIndex =
+      currentIndex - 1;
   }
 
 
-  setActivePanel(
-    PANELS[targetIdx]
-  );
+  /*
+   * Si realmente hemos cambiado de panel,
+   * bloqueamos SOLO el sistema de swipe
+   * durante la animación.
+   *
+   * Los botones continúan funcionando.
+   */
+
+  if (targetIndex !== currentIndex) {
+
+    swipeLocked = true;
 
 
-  pointerDragging = false;
+    setActivePanel(
+      PANELS[targetIndex]
+    );
+
+
+    setTimeout(() => {
+
+      swipeLocked = false;
+
+    }, 500);
+
+  } else {
+
+    /*
+     * No hemos cambiado de panel.
+     * Volvemos suavemente a la posición correcta.
+     */
+
+    setActivePanel(
+      activePanel
+    );
+  }
 }
 
 

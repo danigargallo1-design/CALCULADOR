@@ -379,7 +379,9 @@ body {
   flex-shrink: 0;
 }
 
-
+.interaction-area button {
+  touch-action: manipulation;
+}
 .interaction-track {
 
   width: 300%;
