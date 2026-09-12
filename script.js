@@ -1090,26 +1090,28 @@ function setActivePanel(panel, immediate = false) {
 
 
 /* =========================================================
-   SWIPE HANDLING — STABLE TOUCH VERSION
+   SWIPE HANDLING — ROBUST TOUCH VERSION
    ========================================================= */
 
-let swipeLocked = false;
+let swipePointerId = null;
+let swipeStartX = 0;
+let swipeStartY = 0;
+let swipeCurrentX = 0;
+let swipeDragging = false;
 
+
+/*
+ * POINTER DOWN
+ *
+ * Los botones quedan completamente fuera del sistema
+ * de swipe. Un toque sobre un botón pertenece al botón.
+ */
 
 interactionArea.addEventListener("pointerdown", event => {
 
-  /*
-   * Los botones son botones.
-   * Nunca dejamos que un toque sobre un botón
-   * entre en el sistema de swipe.
-   */
-
   if (event.target.closest("button")) {
-    pointerIsDown = false;
-    pointerDragging = false;
     return;
   }
-
 
   if (
     event.pointerType === "mouse" &&
@@ -1118,44 +1120,48 @@ interactionArea.addEventListener("pointerdown", event => {
     return;
   }
 
+  swipePointerId = event.pointerId;
+
+  swipeStartX = event.clientX;
+  swipeStartY = event.clientY;
+  swipeCurrentX = event.clientX;
+
+  swipeDragging = false;
 
   /*
-   * Pequeño bloqueo después de completar un swipe.
-   * Evita que el siguiente toque sea interpretado
-   * como continuación del gesto anterior.
+   * Capturamos este puntero para que el pointerup
+   * llegue siempre a esta misma interacción aunque
+   * el dedo salga ligeramente del área.
    */
 
-  if (swipeLocked) {
-    return;
+  try {
+    interactionArea.setPointerCapture(event.pointerId);
+  } catch (error) {
+    // Algunos navegadores pueden no soportarlo.
   }
-
-
-  pointerIsDown = true;
-  pointerDragging = false;
-
-  pointerStartX = event.clientX;
-  pointerStartY = event.clientY;
-
-  pointerCurrentX = event.clientX;
 });
 
 
+/*
+ * POINTER MOVE
+ */
+
 interactionArea.addEventListener("pointermove", event => {
 
-  if (!pointerIsDown) {
+  if (
+    swipePointerId === null ||
+    event.pointerId !== swipePointerId
+  ) {
     return;
   }
 
-
-  pointerCurrentX = event.clientX;
-
+  swipeCurrentX = event.clientX;
 
   const deltaX =
-    pointerCurrentX - pointerStartX;
+    swipeCurrentX - swipeStartX;
 
   const deltaY =
-    event.clientY - pointerStartY;
-
+    event.clientY - swipeStartY;
 
   const horizontalDistance =
     Math.abs(deltaX);
@@ -1165,8 +1171,10 @@ interactionArea.addEventListener("pointermove", event => {
 
 
   /*
-   * Sólo consideramos swipe cuando el movimiento
-   * es claramente horizontal.
+   * Todavía no sabemos si es un swipe.
+   *
+   * Si el movimiento es pequeño o principalmente
+   * vertical, no hacemos absolutamente nada.
    */
 
   if (
@@ -1177,21 +1185,28 @@ interactionArea.addEventListener("pointermove", event => {
   }
 
 
-  pointerDragging = true;
+  /*
+   * Desde aquí sabemos que realmente estamos
+   * haciendo un swipe horizontal.
+   */
 
+  swipeDragging = true;
 
-  interactionTrack.classList.add(
-    "is-dragging"
-  );
+  event.preventDefault();
+
+  interactionTrack.classList.add("is-dragging");
 
 
   const areaWidth =
     interactionArea.clientWidth;
 
+  if (!areaWidth) {
+    return;
+  }
+
 
   const currentIndex =
     panelIndex(activePanel);
-
 
   const baseOffset =
     -(currentIndex * areaWidth);
@@ -1203,7 +1218,6 @@ interactionArea.addEventListener("pointermove", event => {
 
   const minimumOffset =
     -((PANELS.length - 1) * areaWidth);
-
 
   const maximumOffset =
     0;
@@ -1236,28 +1250,37 @@ interactionArea.addEventListener("pointermove", event => {
 });
 
 
+/*
+ * FIN DEL GESTO
+ */
+
 function endPointerGesture(event) {
 
-  if (!pointerIsDown) {
+  if (
+    swipePointerId === null ||
+    event.pointerId !== swipePointerId
+  ) {
     return;
   }
 
 
-  /*
-   * Guardamos el desplazamiento ANTES de
-   * resetear el estado.
-   */
-
   const deltaX =
-    pointerCurrentX - pointerStartX;
-
+    swipeCurrentX - swipeStartX;
 
   const wasDragging =
-    pointerDragging;
+    swipeDragging;
 
 
-  pointerIsDown = false;
-  pointerDragging = false;
+  /*
+   * Limpiamos SIEMPRE el estado antes de
+   * ejecutar cualquier cambio de panel.
+   *
+   * Esto es importante para que el siguiente
+   * toque empiece completamente limpio.
+   */
+
+  swipePointerId = null;
+  swipeDragging = false;
 
 
   interactionTrack.classList.remove(
@@ -1266,30 +1289,50 @@ function endPointerGesture(event) {
 
 
   /*
-   * Toque normal fuera de botones:
-   * simplemente mantenemos el panel actual.
+   * Liberar captura del puntero.
+   */
+
+  try {
+
+    if (
+      interactionArea.hasPointerCapture &&
+      interactionArea.hasPointerCapture(event.pointerId)
+    ) {
+      interactionArea.releasePointerCapture(
+        event.pointerId
+      );
+    }
+
+  } catch (error) {
+    // Nada que hacer si el navegador ya lo liberó.
+  }
+
+
+  /*
+   * Si simplemente hemos tocado la zona sin
+   * arrastrar, no hacemos nada.
+   *
+   * Esto evita que un toque normal sea
+   * interpretado como navegación.
    */
 
   if (!wasDragging) {
-
-    setActivePanel(
-      activePanel
-    );
-
     return;
   }
 
 
   const threshold = 45;
 
-
   const currentIndex =
     panelIndex(activePanel);
-
 
   let targetIndex =
     currentIndex;
 
+
+  /*
+   * Swipe hacia la izquierda
+   */
 
   if (
     deltaX < -threshold &&
@@ -1298,8 +1341,14 @@ function endPointerGesture(event) {
 
     targetIndex =
       currentIndex + 1;
+  }
 
-  } else if (
+
+  /*
+   * Swipe hacia la derecha
+   */
+
+  else if (
     deltaX > threshold &&
     currentIndex > 0
   ) {
@@ -1310,34 +1359,20 @@ function endPointerGesture(event) {
 
 
   /*
-   * Si realmente hemos cambiado de panel,
-   * bloqueamos SOLO el sistema de swipe
-   * durante la animación.
-   *
-   * Los botones continúan funcionando.
+   * Cambiar de panel.
    */
 
   if (targetIndex !== currentIndex) {
-
-    swipeLocked = true;
-
 
     setActivePanel(
       PANELS[targetIndex]
     );
 
-
-    setTimeout(() => {
-
-      swipeLocked = false;
-
-    }, 500);
-
   } else {
 
     /*
-     * No hemos cambiado de panel.
-     * Volvemos suavemente a la posición correcta.
+     * No llegó al umbral:
+     * volvemos al panel actual.
      */
 
     setActivePanel(
@@ -1347,17 +1382,50 @@ function endPointerGesture(event) {
 }
 
 
+/*
+ * POINTER UP
+ */
+
 interactionArea.addEventListener(
   "pointerup",
   endPointerGesture
 );
 
 
+/*
+ * POINTER CANCEL
+ */
+
 interactionArea.addEventListener(
   "pointercancel",
   endPointerGesture
 );
 
+
+/*
+ * Si el puntero desaparece por cualquier motivo,
+ * limpiamos el estado para que el siguiente toque
+ * empiece desde cero.
+ */
+
+interactionArea.addEventListener(
+  "lostpointercapture",
+  event => {
+
+    if (
+      swipePointerId !== null &&
+      event.pointerId === swipePointerId
+    ) {
+
+      swipePointerId = null;
+      swipeDragging = false;
+
+      interactionTrack.classList.remove(
+        "is-dragging"
+      );
+    }
+  }
+);
 
 /* =========================================================
    BUTTON EVENTS
